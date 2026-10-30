@@ -9,6 +9,7 @@ const { formatStartupError } = require('./startup-error');
 const { allowedRequest } = require('./local-network-policy');
 
 const { LOCAL_PORT } = desktopConfig;
+const backgroundSmoke = app.commandLine.hasSwitch('epm-background-smoke') && Boolean(app.commandLine.getSwitchValue('user-data-dir'));
 let mainWindow;
 let localServer;
 let localServerError = '';
@@ -54,9 +55,10 @@ async function connectCurrent() { try { const settings = readSettings(); await s
 function openSettings() { const win = new BrowserWindow({ parent: mainWindow || undefined, modal: Boolean(mainWindow), width: 620, height: 680, resizable: false, title: '使用模式与网络设置', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true } }); win.loadFile(path.join(__dirname, 'settings.html')); }
 function installMenu() { Menu.setApplicationMenu(Menu.buildFromTemplate([{ label: '系统', submenu: [{ label: '使用模式与网络设置', accelerator: 'CmdOrCtrl+,', click: openSettings }, { label: '重新连接', accelerator: 'CmdOrCtrl+R', click: connectCurrent }, { type: 'separator' }, { label: '退出', role: 'quit' }] }])); }
 function createWindow() {
-  const win = new BrowserWindow({ width: 1440, height: 920, minWidth: 1080, minHeight: 680, show: false, autoHideMenuBar: false, icon: path.join(__dirname, 'app-icon.ico'), backgroundColor: '#f3f7f5', webPreferences: { preload: path.join(__dirname, 'main-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false } });
+  const win = new BrowserWindow({ width: 1440, height: 920, minWidth: 1080, minHeight: 680, show: false, autoHideMenuBar: false, icon: path.join(__dirname, 'app-icon.ico'), backgroundColor: '#f3f7f5', webPreferences: { preload: path.join(__dirname, 'main-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false, ...(backgroundSmoke ? { offscreen: true, backgroundThrottling: false } : {}) } });
   mainWindow = win;
-  win.once('ready-to-show', () => win.show());
+  // Background acceptance requires an explicit isolated profile and never takes focus.
+  win.once('ready-to-show', () => { if (!backgroundSmoke) win.show(); });
   win.on('closed', () => { if (mainWindow === win) mainWindow = null; });
   win.webContents.setWindowOpenHandler(({ url }) => ({ action: allowedRequest(url, targetUrl()) ? 'allow' : 'deny' }));
   win.webContents.on('will-navigate', (event, url) => { if (!allowedRequest(url, targetUrl())) event.preventDefault(); });
@@ -68,7 +70,7 @@ app.setPath('userData', desktopConfig.stableUserDataDir(app.getPath('appData'), 
 app.setAppUserModelId('cn.fu.enterprise-project-manager-local');
 const primaryInstance = app.requestSingleInstanceLock();
 if (!primaryInstance) app.quit();
-app.on('second-instance', () => { if (mainWindow) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.show(); mainWindow.focus(); } });
+app.on('second-instance', () => { if (mainWindow && !backgroundSmoke) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.show(); mainWindow.focus(); } });
 if (primaryInstance) app.whenReady().then(() => {
   session.defaultSession.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (details, callback) => {
     callback({ cancel: !allowedRequest(details.url, targetUrl()) });

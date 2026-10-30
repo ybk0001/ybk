@@ -15,7 +15,7 @@ const checks = [];
 const productionTest=true;
 const appArgs=process.env.EPM_APP_DIR?[resolve(process.env.EPM_APP_DIR)]:[];
 const exe = process.env.EPM_DESKTOP_EXE || (appArgs.length?resolve(root,'../enterprise-project-manager-4/node_modules/electron/dist/electron.exe'):join(root, 'dist', JSON.parse(readFileSync(join(root,'package.json'),'utf8')).version, 'win-x64', '企业项目收付款管理 本地版.exe'));
-const originalExe = resolve(root, '../work/recovered-3.0.1/bundled-server/public/index.html');
+const originalExe = process.env.EPM_REFERENCE_FILE ? resolve(process.env.EPM_REFERENCE_FILE) : join(root, 'bundled-server/public/index.html');
 const hash = file => createHash('sha256').update(readFileSync(file)).digest('hex');
 const originalHash = hash(originalExe);
 function freePort() {
@@ -40,7 +40,7 @@ const fixture = [
 ];
 writeFileSync(join(dataDir, 'projects.json'), JSON.stringify(fixture), 'utf8');
 const initialDataHash = hash(join(dataDir, 'projects.json'));
-const child = spawn(exe, [...appArgs, `--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${debugPort}`, `--user-data-dir=${userData}`], { cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' } });
+const child = spawn(exe, [...appArgs, '--epm-background-smoke', `--remote-debugging-address=127.0.0.1`, `--remote-debugging-port=${debugPort}`, `--user-data-dir=${userData}`], { cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' } });
 const stderr = [];
 child.stderr.on('data', b => stderr.push(String(b)));
 let socket;
@@ -99,7 +99,7 @@ try {
   assert.equal(child.exitCode, null);
   const openPages = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json();
   assert.equal(openPages.filter(p=>p.url.startsWith(`http://127.0.0.1:${port}`)).length, 1);
-  checks.push('本地版标题正确，重复启动唤回原窗口且仅保留一个实例');
+  checks.push('本地版标题正确，重复启动仅保留一个实例；后台验收不唤起窗口');
   await evaluate(`document.querySelector('#authUsername').value='preview-admin'; document.querySelector('#authPassword').value='preview-smoke-only'; document.querySelector('#authDisplayName').value='测试账号'; document.querySelector('#authForm').requestSubmit();`);
   await waitUntil(() => evaluate(`document.querySelector('#authGate').classList.contains('hidden') && document.querySelector('#projectRows').innerText.includes('名片制作')`), '加载测试账本');
   await pause(1100);
@@ -396,7 +396,7 @@ try {
   assert.ok(idsUnique);
   assert.equal(errors.length, 0);
   assert.equal(hash(originalExe), originalHash);
-  checks.push('真实 DOM ID 唯一，无页面异常，原始 3.0.1 源码摘要保持不变');
+  checks.push('真实 DOM ID 唯一，无页面异常，验收参考源码摘要保持不变');
   await screenshot('04-completed');
   writeFileSync(join(output, 'report.json'), JSON.stringify({ ok: true, output, executable: exe, checks, errors, originalHash }, null, 2), 'utf8');
   console.log(JSON.stringify({ ok: true, output, checks }, null, 2));
