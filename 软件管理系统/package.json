@@ -1,0 +1,9 @@
+{
+  "name": "enterprise-project-manager-local",
+  "productName": "企业项目收付款管理 本地版",
+  "version": "3.1.0-rc.6",
+  "description": "面向3至5人广告制作及印刷团队的本地部署项目管理系统",
+  "main": "main.js",
+  "private": true,
+  "scripts": {"test": "node --test", "build": "node scripts/build-local.cjs"}
+}

@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {createServer} from 'node:net';
+import {randomUUID,createHash} from 'node:crypto';
+import {existsSync,mkdirSync,readFileSync,readdirSync,writeFileSync,realpathSync} from 'node:fs';
+import {resolve,join} from 'node:path';
+const root=resolve(import.meta.dirname,'..');
+const oldVersion=process.env.EPM_FROM_VERSION||'3.1.0-rc.1',newVersion=JSON.parse(readFileSync(join(root,'package.json'),'utf8')).version;
+const installed=join(process.env.LOCALAPPDATA,'Programs/EnterpriseProjectManagerLocal');
+assert.equal(realpathSync(installed),resolve(installed));
+assert.match(readFileSync(join(installed,'installation.ini'),'utf8'),new RegExp('CurrentVersion='+oldVersion.replaceAll('.','\\.')));
+const profile=resolve(process.env.EPM_UPGRADE_PROFILE||'');
+assert.ok(profile.startsWith(join(root,'.data','desktop-smoke')+'\\'),'Use an isolated smoke profile');
+const data=join(profile,'business-data'),files=join(profile,'project-files');
+mkdirSync(files,{recursive:true});writeFileSync(join(files,'upgrade-proof.bin'),Buffer.from('isolated attachment survives install, upgrade and uninstall'));
+const hash=file=>createHash('sha256').update(readFileSync(file)).digest('hex');
+const jsonSnapshot=dir=>existsSync(dir)?Object.fromEntries(readdirSync(dir).filter(f=>f.endsWith('.json')).sort().map(f=>[f,hash(join(dir,f))])):{};
+const before=jsonSnapshot(data),attachment=hash(join(files,'upgrade-proof.bin'));
+const afterStartup={...before};
+// rc.4 adds an empty assistant review ledger; every pre-existing file must remain byte-identical.
+if(!('tax-assistant-reviews.json' in before))afterStartup['tax-assistant-reviews.json']=createHash('sha256').update('[]').digest('hex');
+const defaultData=join(process.env.APPDATA,'enterprise-project-manager-local','business-data');
+const defaultBefore=jsonSnapshot(defaultData);
+const output=join(root,'.data','upgrade-smoke',randomUUID());mkdirSync(output,{recursive:true});
+const run=(exe,args)=>new Promise((accept,reject)=>{const child=spawn(exe,args,{windowsHide:true,stdio:'ignore'});child.once('error',reject);child.once('exit',code=>code===0?accept():reject(Error('Installer exit '+code)));});
+const installer=join(root,'dist',newVersion,`企业项目收付款管理-本地版-${newVersion}-安装更新.exe`);
+await run(installer,['/S']);
+assert.deepEqual(jsonSnapshot(data),before);assert.deepEqual(jsonSnapshot(defaultData),defaultBefore);assert.equal(hash(join(files,'upgrade-proof.bin')),attachment);
+assert.ok(existsSync(join(installed,'versions',oldVersion,'企业项目收付款管理 本地版.exe')));
+const versionDir=join(installed,'versions',newVersion);
+const manifest=JSON.parse(readFileSync(join(versionDir,'release-manifest.json'),'utf8'));
+for(const row of manifest.files)assert.equal(hash(join(versionDir,row.path)),row.sha256,row.path);
+const config=JSON.parse(readFileSync(join(profile,'desktop-settings.json'),'utf8'));
+const port=await new Promise(r=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p));});});
+const child=spawn(join(versionDir,'企业项目收付款管理 本地版.exe'),[`--user-data-dir=${profile}`,`--remote-debugging-address=127.0.0.1`,`--remote-debugging-port=${port}`],{windowsHide:true,stdio:'ignore'});
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+async function until(test,label){for(let i=0;i<120;i++){if(await test())return;await pause(100);}throw Error('Timed out: '+label);}
+let socket;
+try{
+ let page;await until(async()=>{try{page=(await(await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(p=>p.url.startsWith('http://127.0.0.1:'+config.port));return !!page;}catch{return false;}},'upgraded desktop');
+ socket=new WebSocket(page.webSocketDebuggerUrl);let id=0;const pending=new Map();
+ socket.addEventListener('message',e=>{const p=JSON.parse(String(e.data));if(p.id){const entry=pending.get(p.id);pending.delete(p.id);if(entry)p.error?entry.reject(Error(p.error.message)):entry.resolve(p.result);}});
+ await new Promise(r=>socket.addEventListener('open',r,{once:true}));
+ const call=(method,params={})=>new Promise((resolve,reject)=>{const n=++id;pending.set(n,{resolve,reject});socket.send(JSON.stringify({id:n,method,params}));});
+ const evaluate=async expression=>{const p=await call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(p.exceptionDetails)throw Error(p.exceptionDetails.text);return p.result.value;};
+ await until(()=>evaluate(`typeof currentUser!=='undefined'&&currentUser!==null&&document.querySelector('#authGate').classList.contains('hidden')&&projects.length===5`),'existing account and five projects');
+ const screenshot=await call('Page.captureScreenshot',{format:'png'});writeFileSync(join(output,'upgraded.png'),Buffer.from(screenshot.data,'base64'));
+ assert.equal(await evaluate('document.title'),'企业项目收付款管理 本地版');
+ await call('Page.close');socket.close();socket=null;
+ await until(()=>Promise.resolve(child.exitCode!==null),'clean shutdown');
+ assert.deepEqual(jsonSnapshot(data),afterStartup);assert.equal(hash(join(files,'upgrade-proof.bin')),attachment);
+ // The uninstaller is restricted to this verified installer-owned version directory.
+ assert.equal(realpathSync(versionDir),resolve(installed,'versions',newVersion));
+ await run(join(installed,'卸载本地版.exe'),['/S',`_?=${installed}`]);
+ await until(()=>Promise.resolve(!existsSync(join(versionDir,'installed.ini'))),'uninstall completed');
+ assert.deepEqual(jsonSnapshot(data),afterStartup);assert.deepEqual(jsonSnapshot(defaultData),defaultBefore);assert.equal(hash(join(files,'upgrade-proof.bin')),attachment);
+ await run(installer,['/S']);
+ assert.equal(JSON.parse(readFileSync(join(versionDir,'resources/app/package.json'),'utf8')).version,newVersion);
+ const report={ok:true,from:oldVersion,to:newVersion,installed,output,offlineInstaller:true,filesVerified:manifest.files.length,originalAccountAndFiveProjectsPreserved:true,businessJsonUnchanged:true,attachmentUnchanged:true,defaultBusinessDataUnchanged:true,previousProgramRetained:true,uninstallPreservesData:true,reinstalled:true};
+ writeFileSync(join(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+}finally{socket?.close();if(child.exitCode===null)child.kill();}

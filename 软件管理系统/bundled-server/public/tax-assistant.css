@@ -1,0 +1,25 @@
+body .assistant-body, body .assistant-settings { padding:24px; display:block; }
+body .assistant-toolbar, body .assistant-tabs, body .assistant-task-actions, body .assistant-task-head { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+body .assistant-toolbar { margin-bottom:14px; }
+body .assistant-toolbar label { display:flex; align-items:center; gap:10px; white-space:nowrap; }
+body .assistant-toolbar input[type=month] { width:190px; }
+body .assistant-tabs .btn[aria-current=page] { background:var(--primary,#078265); color:white; }
+body .assistant-tabs .btn[aria-current=false] { background:var(--panel,white); color:var(--text,#233348); }
+body .assistant-invoice-editor { margin-top:16px; padding:14px; border:1px solid var(--line); border-radius:8px; }
+body .assistant-invoice-editor summary, body .assistant-invoice-extra summary { cursor:pointer; font-weight:600; }
+body .assistant-invoice-extra { grid-column:1/-1; padding:12px 0; }
+body .assistant-tabs { margin:18px 0; padding-bottom:14px; border-bottom:1px solid var(--line); }
+body .assistant-task { padding:20px; margin:14px 0; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+body .assistant-task p { line-height:1.7; margin:10px 0; }
+body .assistant-task-head { justify-content:space-between; margin-bottom:10px; }
+body .assistant-task h3 { margin:0; }
+body .assistant-task label { display:grid; gap:7px; margin:12px 0; }
+body .assistant-task input { width:100%; }
+body .assistant-task.is-reviewed { border-color:#acd3c0; }
+body .assistant-check { display:flex; align-items:center; gap:10px; margin:16px 0; }
+body .assistant-check input[type=checkbox] { width:18px; height:18px; min-height:18px; }
+body .assistant-file-list { max-height:260px; overflow:auto; line-height:1.8; }
+body #assistantStatus:empty { display:none; }
+body #assistantStatus { padding:8px 0; color:#856222; }
+body .assistant-body [hidden] { display:none!important; }
+@media(max-width:800px){body .assistant-body,body .assistant-settings{padding:16px;}body .assistant-tabs{gap:8px;}body .assistant-task{padding:14px;}}

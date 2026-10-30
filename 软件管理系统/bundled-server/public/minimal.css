@@ -1,0 +1,64 @@
+/* Minimal preview: preserve existing business views behind fewer entry points. */
+body .header-actions { gap: 12px; }
+body .nav-row { gap: 10px; }
+body .nav-row:first-child::before, body .nav-row:nth-child(2)::before { display: none; }
+body .account-strip { margin-top: 6px; }
+body .minimal-more { position: relative; }
+body .minimal-more > summary { list-style: none; cursor: pointer; }
+body .minimal-more > summary::-webkit-details-marker { display: none; }
+body .minimal-more[open] > summary { background: #eaf3ef; color: #164e3e; }
+body .minimal-more-panel { position: fixed; left: 266px; top: 84px; z-index: 100; width: min(580px, calc(100vw - 290px)); max-height: calc(100vh - 110px); overflow-y: auto; padding: 18px; display: grid; gap: 16px; border: 1px solid #d7e3dd; border-radius: 14px; background: var(--panel); box-shadow: 0 18px 45px #123a3022; }
+body .minimal-menu-group { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+body .minimal-menu-group > strong { width: 100%; padding-bottom: 3px; color: var(--muted); font-size: 12px; }
+body #settlementPageBtn { display: none !important; }
+body #clearAllBtn, body .month-tabs.project-only { display: none; }
+body.minimal-focused #workflowSummary { display: none; }
+body .minimal-more-panel .btn { width: auto; min-height: 36px; display: inline-flex; justify-content: flex-start; font-size: 13px; color: var(--text); background: var(--panel); border-color: var(--line); }
+body .minimal-more-panel .data-tools-panel { left: auto; right: 0; }
+body .dashboard-focus { display: block; }
+body .minimal-todo { margin-bottom: 18px; }
+body .minimal-todo > summary, body .minimal-stock > summary { cursor: pointer; padding: 12px 15px; border: 1px solid #d6e3dc; border-radius: 9px; color: #21523f; font-weight: 600; }
+body .minimal-todo[open] > summary, body .minimal-stock[open] > summary { margin-bottom: 12px; }
+body .minimal-todo .todo-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body .minimal-todo .todo-form .wide { grid-column: 1 / -1; }
+body .minimal-overview { margin-top: 20px; }
+body .minimal-overview > summary { padding: 17px 20px; border: 1px solid #dbe5df; border-radius: 12px; background: var(--panel); cursor: pointer; font-weight: 600; }
+body .minimal-overview > summary span { margin-left: 12px; font-size: 12px; font-weight: 400; color: var(--muted); }
+body .minimal-overview .dashboard-work-grid { margin-top: 14px; }
+body .minimal-stock { margin: 18px 0; }
+body .minimal-stock .project-stock-card { margin: 0; }
+body .project-only.filters { flex-wrap: wrap; }
+body .project-ledger .row-actions { flex-wrap: nowrap; }
+body .project-ledger .row-actions .btn { padding: 8px 12px; white-space: nowrap; }
+body .project-only.filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+body .merged-filter-summary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 0 18px 18px; }
+body .merged-filter-summary > strong { color: var(--muted); font-size: 13px; font-weight: 500; }
+body .merged-project-tabs button { padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); cursor: pointer; }
+body .merged-project-tabs button.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+body .merged-advanced-filters { grid-column: 1 / -1; }
+body .merged-advanced-filters > summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 0; }
+body .merged-advanced-filters > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding-top: 12px; }
+body .project-ledger .row-actions { flex-direction: column; align-items: stretch; min-width: 94px; }
+body .project-ledger td:nth-child(2) { min-width: 78px; }
+body .merged-project-summary { display: grid; grid-template-columns: 2fr repeat(4, 1fr); gap: 10px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+body .merged-project-summary > div { display: grid; gap: 6px; min-width: 0; }
+body .merged-project-summary span { color: var(--muted); font-size: 12px; }
+body .merged-project-summary strong { font-size: 16px; overflow-wrap: anywhere; }
+body .merged-project-tabs { display: flex; gap: 10px; padding: 15px 20px; border-bottom: 1px solid var(--line); }
+body .merged-tab-panel > #projectForm { padding: 20px; }
+body .merged-tab-panel.hidden { display: none !important; }
+body .minimal-focused .settlement-only > .section-head { flex-wrap: wrap; }
+body.minimal-focused #workflowRows .workflow-project-head > div:first-child { display: none; }
+body.minimal-focused #mergedFilesPanel #fileProjectContext, body.minimal-focused #mergedFilesPanel #fileUploadForm > .field:first-of-type { display: none; }
+body #mergedDeleteProjectBtn { color: #a43d36; }
+body .merged-supplier-payments { margin: 16px 20px 20px; border: 1px solid var(--line); border-radius: 10px; }
+body .merged-supplier-payments > summary { cursor: pointer; padding: 14px 16px; font-weight: 600; color: var(--text); }
+body .merged-supplier-payments .dialog-body { padding: 10px 16px 16px; }
+@media (max-width: 1100px) {
+  body .project-only.filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  body .merged-project-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 800px) {
+  body .minimal-more-panel { position: fixed; top: 145px; left: 16px; right: 16px; width: auto; max-height: 70vh; overflow-y: auto; }
+  body .minimal-todo .todo-form { grid-template-columns: minmax(0, 1fr); }
+}
